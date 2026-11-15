@@ -5,6 +5,11 @@ on:
     tags:
       - '**'
   workflow_dispatch:
+    inputs:
+      tag_name:
+        description: '发布标签名，留空则自动使用 v0.9.9-run<运行号>'
+        required: false
+        default: ''
   pull_request:
 
 permissions:
@@ -30,6 +35,8 @@ jobs:
             os: ubuntu-latest
     runs-on: ${{ matrix.os }}
     name: Linux ${{ matrix.arch }} Build
+    env:
+      RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && (inputs.tag_name || format('v0.9.9-run{0}', github.run_number)) || github.ref_name }}
     steps:
       - name: Checkout base
         uses: actions/checkout@v4
@@ -46,11 +53,12 @@ jobs:
           name: ${{ matrix.artifact }}
           path: subconverter/
       - name: Package Release
-        if: ${{ github.event_name != 'pull_request' && startsWith(github.ref, 'refs/tags/') }}
+        if: ${{ github.event_name != 'pull_request' && (github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')) }}
         run: tar czf ${{ matrix.artifact }}.tar.gz subconverter
       - name: Draft Release
-        if: ${{ github.event_name != 'pull_request' && startsWith(github.ref, 'refs/tags/') }}
+        if: ${{ github.event_name != 'pull_request' && (github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')) }}
         uses: softprops/action-gh-release@v2
         with:
           files: ${{ matrix.artifact }}.tar.gz
+          tag_name: ${{ env.RELEASE_TAG }}
           draft: false
