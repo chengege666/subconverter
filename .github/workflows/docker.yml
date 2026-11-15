@@ -1,9 +1,7 @@
 name: Publish Docker Image
-on: 
-  push:
-    branches: [ master ]
-    tags:
-      - '**'
+on:
+  # 已停用自动触发，仅在需要时手动运行
+  workflow_dispatch:
 
 concurrency: 
   group: ${{ github.ref }}-${{ github.workflow }}
